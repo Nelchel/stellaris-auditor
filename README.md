@@ -110,3 +110,10 @@ frontend/
 - Added explicit bright chart palette.
 - Improved chart backgrounds, hover states and visual contrast.
 - Removed GitHub Actions npm cache dependency on missing `package-lock.json`.
+
+
+## V3.5.2
+
+- Fixed History Analytics in GitHub Pages demo mode.
+- Added bright chart palette to History graphs.
+- Added error state for unavailable local `/history` API.

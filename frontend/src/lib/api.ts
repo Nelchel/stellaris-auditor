@@ -33,6 +33,7 @@ export async function compareSaves(oldSave: File, newSave: File): Promise<ApiRes
   return response.json()
 }
 
+
 export async function getHistory(): Promise<any> {
   if (DEMO_MODE) {
     return {
@@ -55,15 +56,35 @@ export async function getHistory(): Promise<any> {
           research_density: [1.132, 0.838],
         },
         snapshots: [
-          { year: '2242', archetype: 'Balanced Empire', global: 61, research: 51, stability: 85, risk: 9, report_file: 'demo-old.json' },
-          { year: '2285', archetype: 'Trade-Industrial-Militarist-Internally-Unstable Empire', global: 64, research: 49, stability: 27, risk: 42, report_file: 'demo-new.json' },
+          {
+            year: '2242',
+            archetype: 'Balanced Empire',
+            global: 61,
+            research: 51,
+            stability: 85,
+            risk: 9,
+            report_file: 'demo-old.json',
+          },
+          {
+            year: '2285',
+            archetype: 'Trade-Industrial-Militarist-Internally-Unstable Empire',
+            global: 64,
+            research: 49,
+            stability: 27,
+            risk: 42,
+            report_file: 'demo-new.json',
+          },
         ],
       },
     }
   }
 
   const response = await fetch(`${API_BASE}/history`)
-  if (!response.ok) throw new Error(await response.text())
+
+  if (!response.ok) {
+    throw new Error(await response.text())
+  }
+
   return response.json()
 }
 
