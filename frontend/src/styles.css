@@ -109,3 +109,29 @@ ul.clean { padding-left: 18px; }
   align-items: flex-start;
   gap: 20px;
 }
+
+
+.visual-card .mini-card,
+.card .mini-card {
+  background: linear-gradient(180deg, rgba(15, 23, 42, .92), rgba(15, 23, 42, .74));
+}
+
+.chart-box {
+  padding: 10px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top left, rgba(88, 166, 255, .08), transparent 36%),
+    rgba(2, 6, 23, .25);
+}
+
+.table tr:hover {
+  background: rgba(88, 166, 255, .06);
+}
+
+.metric-value {
+  text-shadow: 0 0 18px rgba(88, 166, 255, .18);
+}
+
+.visual-card {
+  box-shadow: 0 0 0 1px rgba(88, 166, 255, .14), 0 22px 80px rgba(0,0,0,.35);
+}

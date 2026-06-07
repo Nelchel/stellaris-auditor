@@ -102,3 +102,11 @@ frontend/
 - better planet name resolution
 - export HTML/PDF reports
 - hosted backend option
+
+
+## V3.5.1
+
+- Fixed dark/black Chart.js datasets on dark theme.
+- Added explicit bright chart palette.
+- Improved chart backgrounds, hover states and visual contrast.
+- Removed GitHub Actions npm cache dependency on missing `package-lock.json`.
