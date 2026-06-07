@@ -41,14 +41,23 @@ def extract_year_from_text(value: str | None) -> int | None:
     if not value:
         return None
 
-    # Exemples :
-    # autosave_2285.01.01.sav
-    # 2285.06.01
-    # save_2250.12.03
-    matches = re.findall(r"(2[2-9]\d{2})\.\d{1,2}\.\d{1,2}", str(value))
+    text = str(value)
+
+    # autosave_2285.01.01.sav / 2285.06.01 / save_2250.12.03
+    matches = re.findall(r"(2[2-9]\d{2})\.\d{1,2}\.\d{1,2}", text)
 
     for match in matches:
         year = normalize_year(match)
+
+        if year is not None:
+            return year
+
+    # fallback : parfois le nom contient juste 2285 sans date complète
+    matches = re.findall(r"\b(2[2-9]\d{2})\b", text)
+
+    for match in matches:
+        year = normalize_year(match)
+
         if year is not None:
             return year
 
@@ -56,55 +65,66 @@ def extract_year_from_text(value: str | None) -> int | None:
 
 
 def get_audit_year(audit: dict) -> int | None:
-    # 1. source préférée : meta_benchmarking.save_year, mais seulement si plausible.
-    year = normalize_year(audit.get("meta_benchmarking", {}).get("save_year"))
-    if year is not None:
-        return year
+    candidates = [
+        audit.get("meta_benchmarking", {}).get("save_year"),
+        audit.get("date"),
+        audit.get("save_date"),
+        audit.get("game_date"),
+        audit.get("save"),
+        audit.get("_report_file"),
+    ]
 
-    # 2. champs date éventuels.
-    for key in ["date", "save_date", "game_date"]:
-        year = extract_year_from_text(audit.get(key))
+    meta = audit.get("meta", {})
+
+    if isinstance(meta, dict):
+        candidates.extend([
+            meta.get("date"),
+            meta.get("name"),
+        ])
+
+    for candidate in candidates:
+        year = normalize_year(candidate)
+
         if year is not None:
             return year
 
-    # 3. chemin de la save.
-    year = extract_year_from_text(audit.get("save"))
-    if year is not None:
-        return year
+        year = extract_year_from_text(candidate)
 
-    # 4. meta brute éventuelle.
-    meta = audit.get("meta", {})
-    if isinstance(meta, dict):
-        for key in ["date", "name"]:
-            year = extract_year_from_text(meta.get(key))
-            if year is not None:
-                return year
+        if year is not None:
+            return year
 
     return None
 
 
-def audit_identity(audit: dict) -> str:
+def audit_identity(audit: dict, report_file: str, index: int) -> str:
     """
-    Dédoublonnage plus stable.
+    Dédoublonnage souple.
 
-    Avant, on incluait generated_at, ce qui créait des doublons quand la même
-    save était auditée plusieurs fois. Maintenant on identifie surtout par :
-    - chemin/nom de save
-    - année Stellaris
-    - scores clés
-    - archétype
+    On ne jette plus les audits sans année. On évite juste les doublons exacts
+    dans le même rapport et les doublons évidents de même save/scores.
     """
     save = str(audit.get("save", ""))
     year = get_audit_year(audit)
     scores = audit.get("scores", {})
     archetype = audit.get("strategic_analysis", {}).get("empire_archetype", "")
 
+    if save:
+        return "|".join([
+            save,
+            str(year),
+            str(scores.get("global")),
+            str(scores.get("economy")),
+            str(scores.get("military")),
+            str(scores.get("research")),
+            str(scores.get("stability")),
+            archetype,
+        ])
+
     return "|".join([
-        save,
+        report_file,
+        str(index),
         str(year),
         str(scores.get("global")),
-        str(scores.get("economy")),
-        str(scores.get("military")),
         str(scores.get("research")),
         str(scores.get("stability")),
         archetype,
@@ -116,32 +136,43 @@ def load_history_audits() -> list[dict]:
     audits = []
 
     for path, report in load_all_reports():
-        for audit in extract_audits_from_report(report):
-            year = get_audit_year(audit)
+        extracted = extract_audits_from_report(report)
 
-            # On ignore les snapshots sans année Stellaris exploitable pour éviter
-            # les lignes absurdes 0 / 1 / 9416.
-            if year is None:
+        for index, audit in enumerate(extracted):
+            if not isinstance(audit, dict):
                 continue
 
-            identity = audit_identity(audit)
+            year = get_audit_year(audit)
+            identity = audit_identity(audit, path.name, index)
 
             if identity in seen:
                 continue
 
             seen.add(identity)
+
             audit["_report_file"] = path.name
             audit["_history_year"] = year
+            audit["_history_sort_key"] = (
+                year if year is not None else 999999,
+                path.stat().st_mtime,
+                index,
+            )
+
             audits.append(audit)
 
     return sorted(
         audits,
-        key=lambda audit: (
-            audit.get("_history_year", 0),
-            audit.get("generated_at", ""),
-            audit.get("_report_file", ""),
-        ),
+        key=lambda audit: audit.get("_history_sort_key", (999999, "", 0)),
     )
+
+
+def display_label_for_audit(audit: dict, index: int) -> str:
+    year = audit.get("_history_year")
+
+    if year is not None:
+        return str(year)
+
+    return f"Snapshot {index + 1}"
 
 
 def build_history_series(audits: list[dict]) -> dict:
@@ -160,14 +191,11 @@ def build_history_series(audits: list[dict]) -> dict:
     empire_size = []
 
     archetypes = []
+    snapshots = []
 
-    for audit in audits:
-        year = audit.get("_history_year") or get_audit_year(audit)
-
-        if year is None:
-            continue
-
-        labels.append(str(year))
+    for index, audit in enumerate(audits):
+        label = display_label_for_audit(audit, index)
+        labels.append(label)
 
         scores = audit.get("scores", {})
         metrics = audit.get("metrics", {})
@@ -175,12 +203,19 @@ def build_history_series(audits: list[dict]) -> dict:
         strategic = audit.get("strategic_analysis", {})
         risk = audit.get("risk_analysis", {})
 
-        global_scores.append(scores.get("global", 0))
-        economy_scores.append(scores.get("economy", 0))
-        military_scores.append(scores.get("military", 0))
-        research_scores.append(scores.get("research", 0))
-        stability_scores.append(scores.get("stability", 0))
-        risk_scores.append(risk.get("overall_risk_score", 0))
+        global_value = scores.get("global", 0)
+        economy_value = scores.get("economy", 0)
+        military_value = scores.get("military", 0)
+        research_value = scores.get("research", 0)
+        stability_value = scores.get("stability", 0)
+        risk_value = risk.get("overall_risk_score", 0)
+
+        global_scores.append(global_value)
+        economy_scores.append(economy_value)
+        military_scores.append(military_value)
+        research_scores.append(research_value)
+        stability_scores.append(stability_value)
+        risk_scores.append(risk_value)
 
         research_totals.append(metrics.get("research", {}).get("research_total", 0))
         research_density.append(metrics.get("research", {}).get("research_density", 0))
@@ -189,18 +224,18 @@ def build_history_series(audits: list[dict]) -> dict:
 
         core = income.get("energy", 0) + income.get("minerals", 0) + income.get("alloys", 0)
         economy_core.append(round(core, 2))
-        archetypes.append(strategic.get("empire_archetype", "Unknown"))
 
-    snapshots = []
+        archetype = strategic.get("empire_archetype", "Unknown")
+        archetypes.append(archetype)
 
-    for index, audit in enumerate(audits[:len(labels)]):
         snapshots.append({
-            "year": labels[index],
-            "archetype": archetypes[index],
-            "global": global_scores[index],
-            "research": research_scores[index],
-            "stability": stability_scores[index],
-            "risk": risk_scores[index],
+            "year": label,
+            "detected_year": audit.get("_history_year"),
+            "archetype": archetype,
+            "global": global_value,
+            "research": research_value,
+            "stability": stability_value,
+            "risk": risk_value,
             "report_file": audit.get("_report_file", ""),
         })
 
@@ -231,6 +266,7 @@ def get_history_analytics() -> dict:
 
     return {
         "count": len(audits),
+        "source": "local-backend",
         "audits": audits,
         "series": build_history_series(audits),
     }

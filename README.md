@@ -125,3 +125,11 @@ frontend/
 - History now displays 1+ local snapshots instead of requiring 2.
 - If local backend has no reports, History falls back to demo data with a visible source badge.
 - Fixed repeated version-label replacement bug.
+
+
+## V3.5.4
+
+- Fixed local History Analytics with existing `backend/data/reports`.
+- Reports without a detected Stellaris year are no longer discarded.
+- Unknown years are shown as `Snapshot N` instead of being hidden.
+- History now always reflects local reports when the backend has them.
