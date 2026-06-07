@@ -12,10 +12,10 @@ function App() {
     <div className="container">
       <div className="header">
         <div>
-          <h1>🚀 Stellaris Auditor V3.5.2</h1>
+          <h1>🚀 Stellaris Auditor V3.5.3</h1>
           <div className="subtitle">React + FastAPI — GitHub-ready + Pages demo + FastAPI backend.</div>
           <div>
-            <span className="badge">V3.5.2</span>
+            <span className="badge">V3.5.3</span>
             <span className="badge">React</span>
             <span className="badge">FastAPI</span>
             <span className="badge">History</span>

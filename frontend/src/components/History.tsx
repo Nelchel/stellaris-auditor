@@ -103,11 +103,14 @@ export function History() {
     return <div className="card">Chargement de l’historique...</div>
   }
 
-  if ((history.count ?? 0) < 2) {
+  if (!series || labels.length === 0) {
     return (
       <div className="card">
         <h2>History Analytics</h2>
-        <p>Pas encore assez de snapshots. Lance plusieurs audits ou une comparaison timeline.</p>
+        <p>Aucun snapshot exploitable pour le moment.</p>
+        <p className="metric-small">
+          Lance un audit simple ou une comparaison timeline. Les rapports seront sauvegardés dans backend/data/reports.
+        </p>
         <button className="button" onClick={load}>Rafraîchir</button>
       </div>
     )
@@ -120,6 +123,9 @@ export function History() {
           <div>
             <h2>History Analytics</h2>
             <p className="metric-small">Courbes multi-saves reconstruites depuis les rapports backend ou la démo GitHub Pages.</p>
+            <span className={`badge ${history.source?.includes('fallback') ? 'badge-warn' : 'badge-ok'}`}>
+              Source: {history.source ?? 'unknown'}
+            </span>
           </div>
           <button className="button" onClick={load}>Rafraîchir</button>
         </div>

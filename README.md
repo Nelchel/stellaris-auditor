@@ -117,3 +117,11 @@ frontend/
 - Fixed History Analytics in GitHub Pages demo mode.
 - Added bright chart palette to History graphs.
 - Added error state for unavailable local `/history` API.
+
+
+## V3.5.3
+
+- Fixed local History Analytics empty-state confusion.
+- History now displays 1+ local snapshots instead of requiring 2.
+- If local backend has no reports, History falls back to demo data with a visible source badge.
+- Fixed repeated version-label replacement bug.

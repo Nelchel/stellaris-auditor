@@ -141,3 +141,16 @@ ul.clean { padding-left: 18px; }
   border-color: rgba(45, 212, 191, .38);
   box-shadow: 0 0 0 1px rgba(45, 212, 191, .12), 0 22px 80px rgba(0,0,0,.35);
 }
+
+
+.badge-ok {
+  border-color: rgba(74, 222, 128, .45);
+  color: var(--good);
+  background: rgba(74, 222, 128, .08);
+}
+
+.badge-warn {
+  border-color: rgba(250, 204, 21, .45);
+  color: var(--warn);
+  background: rgba(250, 204, 21, .08);
+}

@@ -6,7 +6,7 @@ from .services import save_upload, run_single_audit, run_timeline_audit, list_re
 
 app = FastAPI(
     title="Stellaris Auditor API",
-    version="3.5.0",
+    version="3.5.3",
     description="FastAPI backend for Stellaris save analytics.",
 )
 
@@ -21,7 +21,7 @@ app.add_middleware(
 
 @app.get("/health", response_model=HealthResponse)
 def health():
-    return {"status": "ok", "version": "3.5.0"}
+    return {"status": "ok", "version": "3.5.3"}
 
 
 @app.post("/audit", response_model=AuditResponse)
